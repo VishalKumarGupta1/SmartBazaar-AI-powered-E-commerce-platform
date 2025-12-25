@@ -16,7 +16,11 @@ import {
 } from "../../store/shop/address-slice";
 import AddressCard from "./AddressCard";
 
-const Address = ({ isCheckout="false" }) => {
+const Address = ({
+  isCheckout = "false",
+  setCurrentSelectedAddress,
+  currentSelectedAddress,
+}) => {
   const { user } = useSelector((state) => state.auth);
   const dispatch = useDispatch();
   const { isLoading, addressList } = useSelector((state) => state.shopAddress);
@@ -123,6 +127,8 @@ const Address = ({ isCheckout="false" }) => {
             handleDeleteAddress={handleDeleteAddress}
             handleEditAddress={handleEditAddress}
             isCheckout={isCheckout}
+            setCurrentSelectedAddress={setCurrentSelectedAddress}
+            currentSelectedAddress={currentSelectedAddress}
           />
         ))}
       </div>

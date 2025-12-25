@@ -15,6 +15,8 @@ const AddressCard = ({
   handleDeleteAddress,
   handleEditAddress,
   isCheckout,
+  setCurrentSelectedAddress,
+  currentSelectedAddress,
 }) => {
   return (
     <Card
@@ -22,10 +24,15 @@ const AddressCard = ({
         bgcolor: "white", // dark card background
         color: "black", // white text
         mb: 2,
+        border:
+          currentSelectedAddress?._id === address?._id
+            ? "3px solid black"
+            : "none",
         borderRadius: 2,
         boxShadow: "0 2px 8px rgba(0,0,0,0.5)",
         position: "relative", // for positioning edit icon
       }}
+      onClick={() => setCurrentSelectedAddress(address)}
     >
       {/* Edit & Delete Icons */}
       {!isCheckout && (

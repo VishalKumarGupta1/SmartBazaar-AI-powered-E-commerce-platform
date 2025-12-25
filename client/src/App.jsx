@@ -19,12 +19,14 @@ import { ToastContainer } from "react-toastify";
 import { useDispatch, useSelector } from "react-redux";
 import { useEffect } from "react";
 import { checkAuth } from "./store/auth-slice/index.js";
+import PaypalReturnPage from "./Pages/shopping-view/paypal-return.jsx";
+import PaypalCancelPage from "./Pages/shopping-view/paypal-cancel.jsx";
+import PaypalSuccessPage from "./Pages/shopping-view/payment-success.jsx";
 
 function App() {
   const { isAuthenticated, user, isLoading } = useSelector(
     (state) => state.auth
   );
-
 
   const dispatch = useDispatch();
 
@@ -106,6 +108,9 @@ function App() {
             <Route path="listing" element={<Listing />} />
             <Route path="checkout" element={<Checkout />} />
             <Route path="account" element={<Account />} />
+            <Route path="paypal-return" element={<PaypalReturnPage />} />
+            <Route path="paypal-cancel" element={<PaypalCancelPage />} />
+            <Route path="payment-success" element={<PaypalSuccessPage />} />
           </Route>
           <Route path="*" element={<Notfound />} />
           <Route path="/unauth-page" element={<UnauthPage />} />

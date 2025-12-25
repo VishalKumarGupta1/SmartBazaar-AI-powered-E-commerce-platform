@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Card,
   CardContent,
@@ -17,28 +17,12 @@ import {
   Typography,
   Box,
 } from "@mui/material";
-
-// 🔹 Dummy Data
-const orderList = [
-  {
-    _id: "ORD12345",
-    orderDate: "2024-01-12T10:30:00",
-    orderStatus: "confirmed",
-    totalAmount: 120,
-  },
-  {
-    _id: "ORD67890",
-    orderDate: "2024-02-05T14:20:00",
-    orderStatus: "pending",
-    totalAmount: 85,
-  },
-  {
-    _id: "ORD11121",
-    orderDate: "2024-03-01T09:10:00",
-    orderStatus: "rejected",
-    totalAmount: 220,
-  },
-];
+import { useDispatch, useSelector } from "react-redux";
+import {
+  getAllOrderByUser,
+  getOrderDetails,
+  resetOrderDetails,
+} from "../../store/shop/order-slice";
 
 const getStatusColor = (status) => {
   switch (status) {
@@ -54,21 +38,34 @@ const getStatusColor = (status) => {
 const ShoppingOrders = () => {
   const [open, setOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
+  const dispatch = useDispatch();
+  const { user } = useSelector((state) => state.auth);
+  const { orderList, orderDetails } = useSelector((state) => state.shopOrder);
 
   const handleOpenDetails = (order) => {
     setSelectedOrder(order);
+    dispatch(getOrderDetails(order._id));
     setOpen(true);
   };
 
   const handleClose = () => {
     setOpen(false);
     setSelectedOrder(null);
+    dispatch(resetOrderDetails());
   };
+
+  useEffect(() => {
+    dispatch(getAllOrderByUser(user._id));
+  }, [dispatch]);
 
   return (
     <Box p={3}>
       <Card>
-        <CardHeader title="Order History" />
+        <div className="flex justify-between">
+          <CardHeader title="  Order History" />
+          <CardHeader title={orderList?.length} />
+        </div>
+
         <CardContent>
           <TableContainer>
             <Table>
@@ -134,24 +131,32 @@ const ShoppingOrders = () => {
       <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
         <DialogTitle>Order Details</DialogTitle>
         <DialogContent dividers>
-          {selectedOrder && (
+          {orderDetails && (
             <>
               {/* 🔹 Order Details */}
-              <Typography variant="h6" gutterBottom>
-                Order Details
-              </Typography>
 
               <Typography>
-                <b>Order ID:</b> {selectedOrder._id}
+                <b>Order ID:</b> {orderDetails?._id}
               </Typography>
               <Typography>
-                <b>Status:</b> {selectedOrder.orderStatus}
+                <b>Status:</b>{" "}
+                <Chip
+                  label={orderDetails?.orderStatus}
+                  color={getStatusColor(orderDetails?.orderStatus)}
+                  size="small"
+                />
               </Typography>
               <Typography>
-                <b>Total:</b> ${selectedOrder.totalAmount}
+                <b>Total:</b> ${orderDetails?.totalAmount}
               </Typography>
               <Typography mb={2}>
-                <b>Date:</b> {selectedOrder.orderDate.split("T")[0]}
+                <b>Date:</b> {orderDetails?.orderDate.split("T")[0]}
+              </Typography>
+              <Typography>
+                <b>Payment Status:</b> {orderDetails?.paymentStatus}
+              </Typography>
+              <Typography>
+                <b>Payment Method:</b> {orderDetails?.paymentMethod}
               </Typography>
 
               {/* 🔹 Products Section */}
@@ -170,30 +175,24 @@ const ShoppingOrders = () => {
                   }}
                 >
                   <Typography>Product Name</Typography>
+                  <Typography> Quantity</Typography>
                   <Typography>Price</Typography>
                 </Box>
 
                 {/* Dummy Products */}
-                <Box
-                  sx={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    p: 1,
-                  }}
-                >
-                  <Typography>Wireless Headphones</Typography>
-                  <Typography>$50</Typography>
-                </Box>
-                <Box
-                  sx={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    p: 1,
-                  }}
-                >
-                  <Typography>Smart Watch</Typography>
-                  <Typography>$70</Typography>
-                </Box>
+                {orderDetails?.cartItems?.map((item) => (
+                  <Box
+                    sx={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      p: 1,
+                    }}
+                  >
+                    <Typography>{item.title}</Typography>
+                    <Typography>{item.quantity}</Typography>
+                    <Typography>{item.price}</Typography>
+                  </Box>
+                ))}
               </Box>
 
               {/* 🔹 Shipping Info */}
@@ -202,22 +201,22 @@ const ShoppingOrders = () => {
               </Typography>
 
               <Typography>
-                <b>Name:</b> John Doe
+                <b>Name:</b> {user?.name}
               </Typography>
               <Typography>
-                <b>Address:</b> 221B Baker Street
+                <b>Address:</b> {orderDetails?.addressInfo.address}
               </Typography>
               <Typography>
-                <b>City:</b> London
+                <b>City:</b> {orderDetails?.addressInfo.city}
               </Typography>
               <Typography>
-                <b>Pincode:</b> 123456
+                <b>Pincode:</b> {orderDetails?.addressInfo.phone}
               </Typography>
               <Typography>
-                <b>Phone:</b> +91 9876543210
+                <b>Phone:</b> {orderDetails?.addressInfo.pincode}
               </Typography>
               <Typography>
-                <b>Notes:</b> Please deliver in the evening
+                <b>Notes:</b> {orderDetails?.addressInfo.notes}
               </Typography>
             </>
           )}

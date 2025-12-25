@@ -135,15 +135,18 @@ export default function ShoppingHeader() {
             >
               Home
             </Button>
-            {["Men", "Women", "Kids", "Footwear", "Accessories"].map((text) => (
-              <Button
-                color="inherit"
-                onClick={() => handleNavigateToListingPage(text, "category")}
-                sx={{ textTransform: "capitalize", fontSize: "17px" }}
-              >
-                {text}
-              </Button>
-            ))}
+            {["Men", "Women", "Kids", "Footwear", "Accessories"].map(
+              (text, index) => (
+                <Button
+                  key={index}
+                  color="inherit"
+                  onClick={() => handleNavigateToListingPage(text, "category")}
+                  sx={{ textTransform: "capitalize", fontSize: "17px" }}
+                >
+                  {text}
+                </Button>
+              )
+            )}
 
             {/* <Button
               color="inherit"
