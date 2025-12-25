@@ -22,10 +22,12 @@ import {
   AccountCircle as AccountIcon,
   ShoppingCart as CartIcon,
 } from "@mui/icons-material";
-import { Link, useNavigate } from "react-router";
+import { Link, useLocation, useNavigate, useSearchParams } from "react-router";
 import CartDrawer from "./CartDrawer";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchCartItems } from "../../store/shop/cart-slice";
+import { logoutUser } from "../../store/auth-slice";
+import { toast } from "react-toastify";
 
 export default function ShoppingHeader() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -35,6 +37,8 @@ export default function ShoppingHeader() {
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
   const navigate = useNavigate();
+  const loaction = useLocation();
+  const [searchParams, setsearchParams] = useSearchParams();
 
   useEffect(() => {
     dispatch(fetchCartItems(user?._id));
@@ -66,6 +70,16 @@ export default function ShoppingHeader() {
     setCartDrawerOpen(isOpen);
   };
 
+  const handlelogout = () => {
+    dispatch(logoutUser()).then((res) => {
+      if (res?.payload?.success) {
+        toast.success(res?.payload?.message);
+      } else {
+        toast.error(res?.payload?.message);
+      }
+    });
+  };
+
   const handleNavigateToListingPage = (text, type) => {
     const currentFilters = {
       category: [],
@@ -74,7 +88,9 @@ export default function ShoppingHeader() {
     // Set the clicked filter
     currentFilters[type] = [text];
     sessionStorage.setItem("filters", JSON.stringify(currentFilters));
-    navigate("/shop/listing");
+    loaction.pathname.includes("listing")
+      ? setsearchParams(new URLSearchParams(`?category=${text}`))
+      : navigate("/shop/listing");
   };
 
   return (
@@ -123,15 +139,26 @@ export default function ShoppingHeader() {
             >
               Home
             </Button>
-            {["Men", "Women", "Kids", "Footwear", "Accessories"].map((text) => (
-              <Button
-                color="inherit"
-                onClick={() => handleNavigateToListingPage(text, "category")}
-                sx={{ textTransform: "capitalize", fontSize: "17px" }}
-              >
-                {text}
-              </Button>
-            ))}
+            <Button
+              color="inherit"
+              component={Link}
+              to="/shop/listing"
+              sx={{ textTransform: "capitalize", fontSize: "17px" }}
+            >
+              Products
+            </Button>
+            {["Men", "Women", "Kids", "Footwear", "Accessories"].map(
+              (text, index) => (
+                <Button
+                  key={index}
+                  color="inherit"
+                  onClick={() => handleNavigateToListingPage(text, "category")}
+                  sx={{ textTransform: "capitalize", fontSize: "17px" }}
+                >
+                  {text}
+                </Button>
+              )
+            )}
 
             {/* <Button
               color="inherit"
@@ -232,7 +259,7 @@ export default function ShoppingHeader() {
         >
           View Account
         </MenuItem>
-        <MenuItem onClick={handleProfileMenuClose} component={Link}>
+        <MenuItem onClick={() => handlelogout()} component={Link}>
           Logout
         </MenuItem>
       </Menu>

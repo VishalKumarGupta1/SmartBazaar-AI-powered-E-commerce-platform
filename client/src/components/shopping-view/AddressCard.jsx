@@ -10,37 +10,51 @@ import {
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 
-const AddressCard = ({ address, handleDeleteAddress, handleEditAddress }) => {
+const AddressCard = ({
+  address,
+  handleDeleteAddress,
+  handleEditAddress,
+  isCheckout,
+  setCurrentSelectedAddress,
+  currentSelectedAddress,
+}) => {
   return (
     <Card
       sx={{
         bgcolor: "white", // dark card background
         color: "black", // white text
         mb: 2,
+        border:
+          currentSelectedAddress?._id === address?._id
+            ? "3px solid black"
+            : "none",
         borderRadius: 2,
         boxShadow: "0 2px 8px rgba(0,0,0,0.5)",
         position: "relative", // for positioning edit icon
       }}
+      onClick={() => setCurrentSelectedAddress(address)}
     >
       {/* Edit & Delete Icons */}
-      <Stack
-        direction="row"
-        spacing={1}
-        sx={{ position: "absolute", top: 8, right: 8 }}
-      >
-        <IconButton
-          onClick={() => handleEditAddress(address)}
-          sx={{ color: "grey.500" }}
+      {!isCheckout && (
+        <Stack
+          direction="row"
+          spacing={1}
+          sx={{ position: "absolute", top: 8, right: 8 }}
         >
-          <EditIcon />
-        </IconButton>
-        <IconButton
-          onClick={() => handleDeleteAddress(address._id)}
-          sx={{ color: "grey.500" }}
-        >
-          <DeleteIcon />
-        </IconButton>
-      </Stack>
+          <IconButton
+            onClick={() => handleEditAddress(address)}
+            sx={{ color: "grey.500" }}
+          >
+            <EditIcon />
+          </IconButton>
+          <IconButton
+            onClick={() => handleDeleteAddress(address._id)}
+            sx={{ color: "grey.500" }}
+          >
+            <DeleteIcon />
+          </IconButton>
+        </Stack>
+      )}
 
       <CardContent>
         <Typography variant="h6" gutterBottom>

@@ -16,13 +16,16 @@ import {
   DialogContent,
   Typography,
   Box,
+  TextField,
 } from "@mui/material";
 import { useDispatch, useSelector } from "react-redux";
 import {
-  getAllOrderByUser,
-  getOrderDetails,
+  getAllOrderForAdmin,
+  getOrderDetailsForAdmin,
   resetOrderDetails,
-} from "../../store/shop/order-slice";
+  updateOrderStatus,
+} from "../../store/admin/order-slice";
+import { toast } from "react-toastify";
 
 const getStatusColor = (status) => {
   switch (status) {
@@ -35,17 +38,23 @@ const getStatusColor = (status) => {
   }
 };
 
-const ShoppingOrders = () => {
+const AdminOrder = () => {
+  const [orderStatus, setOrderStatus] = useState("");
   const [open, setOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
-  const { orderList, orderDetails } = useSelector((state) => state.shopOrder);
+  const { orderList, orderDetails } = useSelector((state) => state.adminOrder);
 
   const handleOpenDetails = (order) => {
     setSelectedOrder(order);
-    dispatch(getOrderDetails(order._id));
+    dispatch(getOrderDetailsForAdmin(order._id));
+    setOrderStatus(order.orderStatus); // sync dropdown
     setOpen(true);
+  };
+
+  const handleStatusChange = (e) => {
+    setOrderStatus(e.target.value);
   };
 
   const handleClose = () => {
@@ -55,14 +64,28 @@ const ShoppingOrders = () => {
   };
 
   useEffect(() => {
-    dispatch(getAllOrderByUser(user._id));
+    dispatch(getAllOrderForAdmin(user._id));
   }, [dispatch]);
+
+  const handleUpdateOrderStatus = () => {
+    dispatch(
+      updateOrderStatus({ id: orderDetails._id, orderStatus: orderStatus })
+    ).then((res) => {
+      if (res?.payload?.success) {
+        dispatch(getOrderDetailsForAdmin(orderDetails._id));
+        dispatch(getAllOrderForAdmin(user._id));
+        toast.success(res?.payload?.message);
+      } else {
+        toast.error(res?.payload?.message);
+      }
+    });
+  };
 
   return (
     <Box p={3}>
       <Card>
         <div className="flex justify-between">
-          <CardHeader title="  Order History" />
+          <CardHeader title=" All Order" />
           <CardHeader title={orderList?.length} />
         </div>
 
@@ -133,18 +156,11 @@ const ShoppingOrders = () => {
         <DialogContent dividers>
           {orderDetails && (
             <>
-              {/* 🔹 Order Details */}
-
               <Typography>
                 <b>Order ID:</b> {orderDetails?._id}
               </Typography>
               <Typography>
-                <b>Status:</b>{" "}
-                <Chip
-                  label={orderDetails?.orderStatus}
-                  color={getStatusColor(orderDetails?.orderStatus)}
-                  size="small"
-                />
+                <b>Status:</b> {orderDetails?.orderStatus}
               </Typography>
               <Typography>
                 <b>Total:</b> ${orderDetails?.totalAmount}
@@ -179,7 +195,6 @@ const ShoppingOrders = () => {
                   <Typography>Price</Typography>
                 </Box>
 
-                {/* Dummy Products */}
                 {orderDetails?.cartItems?.map((item) => (
                   <Box
                     sx={{
@@ -204,20 +219,68 @@ const ShoppingOrders = () => {
                 <b>Name:</b> {user?.name}
               </Typography>
               <Typography>
-                <b>Address:</b> {orderDetails?.addressInfo.address}
+                <b>Address:</b> {orderDetails?.addressInfo.city}
               </Typography>
               <Typography>
                 <b>City:</b> {orderDetails?.addressInfo.city}
               </Typography>
               <Typography>
-                <b>Pincode:</b> {orderDetails?.addressInfo.phone}
+                <b>Pincode:</b> {orderDetails?.addressInfo.pincode}
               </Typography>
               <Typography>
-                <b>Phone:</b> {orderDetails?.addressInfo.pincode}
+                <b>Phone:</b> {orderDetails?.addressInfo.phone}
               </Typography>
               <Typography>
                 <b>Notes:</b> {orderDetails?.addressInfo.notes}
               </Typography>
+
+              <Box
+                sx={{
+                  mt: 3,
+                  p: 2,
+                  borderRadius: 1,
+                }}
+              >
+                <Typography variant="h6" sx={{ color: "black", mb: 2 }}>
+                  Update Order Status
+                </Typography>
+
+                <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
+                  <TextField
+                    select
+                    label="Order Status"
+                    value={orderStatus}
+                    onChange={handleStatusChange}
+                    SelectProps={{ native: true }}
+                    sx={{
+                      flex: 1,
+                      backgroundColor: "#fff",
+                      borderRadius: 1,
+                    }}
+                  >
+                    <option value="pending">Pending</option>
+                    <option value="confirmed">Confirmed</option>
+                    <option value="shipped">Shipped</option>
+                    <option value="delivered">Delivered</option>
+                    <option value="rejected">Rejected</option>
+                    <option value="inProcess">In Process</option>
+                  </TextField>
+
+                  <Button
+                    variant="contained"
+                    disabled={orderStatus === orderDetails.orderStatus}
+                    sx={{
+                      backgroundColor: "#fff",
+                      color: "#000",
+                      px: 3,
+                      "&:hover": { backgroundColor: "#fff" },
+                    }}
+                    onClick={() => handleUpdateOrderStatus()}
+                  >
+                    Update
+                  </Button>
+                </Box>
+              </Box>
             </>
           )}
         </DialogContent>
@@ -226,4 +289,4 @@ const ShoppingOrders = () => {
   );
 };
 
-export default ShoppingOrders;
+export default AdminOrder;

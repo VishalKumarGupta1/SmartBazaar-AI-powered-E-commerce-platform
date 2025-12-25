@@ -53,24 +53,24 @@ export const createOrder = asynchandler(async (req, res) => {
     // Step 2: Prepare PayPal order JSON
     const createOrderJSON = {
       intent: "CAPTURE",
-      payer: {
-        email_address: addressInfo.email || "customer@example.com", //dynamic
-        name: {
-          given_name: addressInfo.firstName || "John", //dynamic
-          surname: addressInfo.lastName || "Doe", //dynamic
-        },
-        address: {
-          address_line_1: addressInfo.address,
-          admin_area_2: addressInfo.city,
-          postal_code: addressInfo.pincode,
-          country_code: "US",
-        },
-      },
+      // payer: {
+      //   email_address:  "customer@example.com", //dynamic
+      //   name: {
+      //     given_name: "John", //dynamic
+      //     surname:  "Doe", //dynamic
+      //   },
+      //   address: {
+      //     address_line_1: addressInfo.address,
+      //     admin_area_2: addressInfo.city,
+      //     postal_code: addressInfo.pincode,
+      //     country_code: "US",
+      //   },
+      // },
       purchase_units: [
         {
-          reference_id: cartId || "PUHF",
+          reference_id: "PUHF",
           description: "Order from YoursMart",
-          custom_id: `ORDER_${cartId || Date.now()}`,
+          custom_id: `ORDER_${Date.now()}`,
           invoice_id: `INV_${Date.now()}`,
           amount: {
             currency_code: "USD",
@@ -130,6 +130,7 @@ export const createOrder = asynchandler(async (req, res) => {
     const paymentInfo = await response.json();
 
     if (!response.ok) {
+      // console.error("PayPal Error:", paymentInfo);
       throw new ApiError(
         500,
         paymentInfo.message || "Failed to create PayPal order"
@@ -190,21 +191,68 @@ export const createOrder = asynchandler(async (req, res) => {
 });
 
 export const capturePayment = asynchandler(async (req, res) => {
-  const { paymentId, payerId, orderId } = req.body;
+  const { paypalOrderId, orderId } = req.body;
+  console.log(paypalOrderId, orderId);
+  console.log("capture start ");
 
+  // 1️⃣ Find order in DB
   let order = await Order.findById(orderId);
   if (!order) {
     throw new ApiError(404, "Order connot be found");
   }
 
-  order.paymentStatus = "Paid";
+  // 2️⃣ Get PayPal access token
+  const authResponse = await fetch(
+    `${process.env.PAYPAL_API_URL}/v1/oauth2/token`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Basic ${Buffer.from(
+          `${process.env.PAYPAL_CLIENT_ID}:${process.env.PAYPAL_CLIENT_SECRET}`
+        ).toString("base64")}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: "grant_type=client_credentials",
+    }
+  );
+
+  const { access_token } = await authResponse.json();
+  console.log("order controller start 2 complete");
+
+  // 3️⃣ Capture PayPal order
+  const captureResponse = await fetch(
+    `${process.env.PAYPAL_API_URL}/v2/checkout/orders/${paypalOrderId}/capture`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${access_token}`,
+        "Content-Type": "application/json",
+      },
+    }
+  );
+  const captureData = await captureResponse.json();
+
+  if (!captureResponse.ok) {
+    throw new ApiError(400, captureData.message || "Payment capture failed");
+  }
+  console.log("order controller start 3 complete");
+
+  // 4️⃣ Extract real transaction ID
+  const captureId = captureData.purchase_units[0].payments.captures[0].id;
+  console.log("order controller start 4 complete");
+
+  // 5️⃣ Update order
+  order.paymentStatus = "paid";
   order.orderStatus = "confirmed";
-  order.paymentId = paymentId;
-  order.payerId = payerId;
+  order.paymentId = captureId;
+  order.orderUpdateDate = new Date();
+  console.log("order controller start 5 complete");
+
+  // 6️⃣ Reduce product stock
 
   for (let item of order.cartItems) {
     let product = await Product.findById(item.productId);
-    if (!product) {
+    if (!product || product.totalStock < item.quantity) {
       throw new ApiError(
         404,
         `Not Enough Stock for this product ${product.title}`
@@ -213,18 +261,26 @@ export const capturePayment = asynchandler(async (req, res) => {
     product.totalStock -= item.quantity;
     await product.save();
   }
+  console.log("order controller start 6 complete");
 
+  // 7️⃣ Delete cart
   await Cart.findByIdAndDelete(order.cartId);
+  console.log("order controller start 7 complete");
 
+  // 8️⃣ Save order
   await order.save();
+  console.log("order controller start 8 complete");
 
-  return res.status(200).json(new ApiResponse(201, order, "Order confirmed"));
+  return res
+    .status(200)
+    .json(new ApiResponse(201, order, "Payment captured & order confirmed"));
 });
 
 export const getAllOrderByUser = asynchandler(async (req, res) => {
-  const { userId } = req.body;
+  const { userId } = req.params;
+  console.log(userId);
 
-  let orders = await Order.findById({ userId });
+  let orders = await Order.find({ userId });
   if (!orders.length) {
     throw new ApiError(404, "no Orders found");
   }
