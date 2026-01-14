@@ -31,6 +31,7 @@ const AddressCard = ({
         borderRadius: 2,
         boxShadow: "0 2px 8px rgba(0,0,0,0.5)",
         position: "relative", // for positioning edit icon
+        cursor: isCheckout && "pointer",
       }}
       onClick={() => setCurrentSelectedAddress(address)}
     >
