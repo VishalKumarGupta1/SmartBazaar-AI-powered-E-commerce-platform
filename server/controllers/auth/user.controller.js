@@ -207,7 +207,7 @@ export const changeCurrentpassword = asynchandler(async (req, res) => {
 
   return res
     .status(200)
-    .json(new ApiResponse(200, "password changed successfully"));
+    .json(new ApiResponse(200, {}, "password changed successfully"));
 });
 
 export const forgetPassword = asynchandler(async (req, res, next) => {
@@ -225,19 +225,19 @@ export const forgetPassword = asynchandler(async (req, res, next) => {
 
   await user.save({ validateBeforeSave: false });
 
-  const resetPasswordUrl = `${process.env.FRONTEND_URL}/password/reset/${resetToken}`;
+  const resetPasswordUrl = `${process.env.FRONTEND_URL}/auth/password/reset/${resetToken}`;
 
   const message = `Your reset passowrd token is :- \n\n ${resetPasswordUrl} \n\n if you have not requsted it then please ignore it .`;
   try {
     await sendEmail(
       user.email,
-      "Ecommerce Website Password Reset Link",
+      "Yoursmart  a Ecommerce Website Password Reset Link",
       message
     );
 
     return res
       .status(200)
-      .json(new ApiResponse(200, "Password reset link sent to email"));
+      .json(new ApiResponse(200, {}, "Password reset link sent to email"));
   } catch (error) {
     // In case email sending fails
     user.resetPasswordToken = null;
@@ -275,5 +275,5 @@ export const resetPassword = asynchandler(async (req, res, next) => {
 
   return res
     .status(200)
-    .json(new ApiResponse(200, "password Reset successully"));
+    .json(new ApiResponse(200, {}, "password Reset successully"));
 });

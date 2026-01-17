@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   AppBar,
   Toolbar,
@@ -15,6 +15,7 @@ import {
   Menu,
   MenuItem,
   capitalize,
+  Badge,
 } from "@mui/material";
 import {
   Menu as MenuIcon,
@@ -22,19 +23,30 @@ import {
   AccountCircle as AccountIcon,
   ShoppingCart as CartIcon,
 } from "@mui/icons-material";
-import { Link } from "react-router";
+import { Link, useLocation, useNavigate, useSearchParams } from "react-router";
+import CartDrawer from "./CartDrawer";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchCartItems } from "../../store/shop/cart-slice";
+import { logoutUser } from "../../store/auth-slice";
+import { toast } from "react-toastify";
 
 export default function ShoppingHeader() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
   const [profileMenuAnchor, setProfileMenuAnchor] = useState(null);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const { cartItems } = useSelector((state) => state.shopCart);
+  const dispatch = useDispatch();
+  const { user } = useSelector((state) => state.auth);
+  const navigate = useNavigate();
+  const loaction = useLocation();
+  const [searchParams, setsearchParams] = useSearchParams();
+
+  useEffect(() => {
+    dispatch(fetchCartItems(user?._id));
+  }, [dispatch]);
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
-  };
-  const handleSearchChange = (event) => {
-    setSearchQuery(event.target.value);
   };
 
   const handleProfileMenuOpen = (event) => {
@@ -45,6 +57,41 @@ export default function ShoppingHeader() {
   const handleProfileMenuClose = () => {
     setIsProfileMenuOpen(false);
     setProfileMenuAnchor(null);
+  };
+
+  const [CartDrawerOpen, setCartDrawerOpen] = useState(false);
+
+  const toggleDrawer = (isOpen) => (event) => {
+    if (
+      event.type === "keydown" &&
+      (event.key === "Tab" || event.key === "Shift")
+    ) {
+      return;
+    }
+    setCartDrawerOpen(isOpen);
+  };
+
+  const handlelogout = () => {
+    dispatch(logoutUser()).then((res) => {
+      if (res?.payload?.success) {
+        toast.success(res?.payload?.message);
+      } else {
+        toast.error(res?.payload?.message);
+      }
+    });
+  };
+
+  const handleNavigateToListingPage = (text, type) => {
+    const currentFilters = {
+      category: [],
+      brand: [],
+    };
+    // Set the clicked filter
+    currentFilters[type] = [text];
+    sessionStorage.setItem("filters", JSON.stringify(currentFilters));
+    loaction.pathname.includes("listing")
+      ? setsearchParams(new URLSearchParams(`?category=${text}`))
+      : navigate("/shop/listing");
   };
 
   return (
@@ -96,43 +143,30 @@ export default function ShoppingHeader() {
             <Button
               color="inherit"
               component={Link}
-              to="/Products"
+              to="/shop/listing"
               sx={{ textTransform: "capitalize", fontSize: "17px" }}
             >
-              Men
+              Products
             </Button>
-
+            {["Men", "Women", "Kids", "Footwear", "Accessories"].map(
+              (text, index) => (
+                <Button
+                  key={index}
+                  color="inherit"
+                  onClick={() => handleNavigateToListingPage(text, "category")}
+                  sx={{ textTransform: "capitalize", fontSize: "17px" }}
+                >
+                  {text}
+                </Button>
+              )
+            )}
             <Button
               color="inherit"
               component={Link}
-              to="/Login"
+              to="/shop/search"
               sx={{ textTransform: "capitalize", fontSize: "17px" }}
             >
-              Women
-            </Button>
-            <Button
-              color="inherit"
-              component={Link}
-              to="/Signup"
-              sx={{ textTransform: "capitalize", fontSize: "17px" }}
-            >
-              Kids
-            </Button>
-            <Button
-              color="inherit"
-              component={Link}
-              to="/Login"
-              sx={{ textTransform: "capitalize", fontSize: "17px" }}
-            >
-              Footwear
-            </Button>
-            <Button
-              color="inherit"
-              component={Link}
-              to="/Signup"
-              sx={{ textTransform: "capitalize", fontSize: "17px" }}
-            >
-              Accessories
+              Search
             </Button>
           </Box>
 
@@ -144,8 +178,30 @@ export default function ShoppingHeader() {
               gap: 2,
             }}
           >
-            <IconButton color="inherit" component={Link} to="/shop/checkout">
-              <CartIcon />
+            <IconButton color="inherit" onClick={toggleDrawer(true)}>
+              <Badge
+                badgeContent={cartItems?.items?.length || 0}
+                overlap="circular"
+                anchorOrigin={{
+                  vertical: "top",
+                  horizontal: "right",
+                }}
+                sx={{
+                  "& .MuiBadge-badge": {
+                    backgroundColor: "white",
+                    color: "black",
+                    border: "1px solid black",
+                    fontSize: "0.75rem",
+                    fontWeight: "bold",
+                    minWidth: "15px",
+                    height: "18px",
+                    top: -2,
+                    right: -6,
+                  },
+                }}
+              >
+                <CartIcon />
+              </Badge>
             </IconButton>
             <IconButton color="inherit" onClick={handleProfileMenuOpen}>
               <AccountIcon />
@@ -173,7 +229,7 @@ export default function ShoppingHeader() {
         <MenuItem
           onClick={handleProfileMenuClose}
           component={Link}
-          to="/myProfile"
+          to="/shop/view-profile"
         >
           View Profile
         </MenuItem>
@@ -184,10 +240,16 @@ export default function ShoppingHeader() {
         >
           View Account
         </MenuItem>
-        <MenuItem onClick={handleProfileMenuClose} component={Link}>
+        <MenuItem onClick={() => handlelogout()} component={Link}>
           Logout
         </MenuItem>
       </Menu>
+
+      <CartDrawer
+        cartItems={cartItems}
+        open={CartDrawerOpen}
+        toggleDrawer={toggleDrawer}
+      />
 
       {/* Drawer for Mobile Menu */}
       <Drawer
@@ -210,18 +272,24 @@ export default function ShoppingHeader() {
 
           {/* Mobile nav links */}
           <List>
-            {["Home", "Men", "Women", "Kids", "Footwear", "Accessories"].map(
-              (text) => (
-                <ListItem button key={text}>
-                  <ListItemText
-                    component={Link}
-                    to={text}
-                    primary={text}
-                    sx={{ textAlign: "center" }}
-                  />
-                </ListItem>
-              )
-            )}
+            {[
+              "Home",
+              "Men",
+              "Women",
+              "Kids",
+              "Footwear",
+              "Accessories",
+              "Search",
+            ].map((text) => (
+              <ListItem button key={text}>
+                <ListItemText
+                  component={Link}
+                  to={text}
+                  primary={text}
+                  sx={{ textAlign: "center" }}
+                />
+              </ListItem>
+            ))}
           </List>
 
           {/* Profile and Cart icons */}
@@ -233,7 +301,7 @@ export default function ShoppingHeader() {
               mt: 3,
             }}
           >
-            <IconButton color="inherit" component={Link} to="/shop/checkout">
+            <IconButton color="inherit" onClick={toggleDrawer(true)}>
               <CartIcon sx={{ color: "#fff" }} />
             </IconButton>
             <IconButton color="inherit" onClick={handleProfileMenuOpen}>

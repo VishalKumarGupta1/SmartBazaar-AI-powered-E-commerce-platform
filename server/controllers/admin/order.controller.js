@@ -4,7 +4,7 @@ import { asynchandler } from "../../utils/asynchandler.js";
 import { ApiResponse } from "../../utils/ApiResponse.js";
 
 export const getAllOrderOfAlluser = asynchandler(async (req, res) => {
-  let orders = await Order.findById();
+  let orders = await Order.find({});
   if (!orders.length) {
     throw new ApiError(404, "no Orders found");
   }
@@ -46,7 +46,5 @@ export const updateOrderStatus = asynchandler(async (req, res) => {
 
   return res
     .status(200)
-    .json(
-      new ApiResponse(201, "  Ordersatatus is updated successfully details")
-    );
+    .json(new ApiResponse(201, "  Orderstatus is updated successfully"));
 });

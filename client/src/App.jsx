@@ -19,12 +19,18 @@ import { ToastContainer } from "react-toastify";
 import { useDispatch, useSelector } from "react-redux";
 import { useEffect } from "react";
 import { checkAuth } from "./store/auth-slice/index.js";
+import PaypalReturnPage from "./Pages/shopping-view/paypal-return.jsx";
+import PaypalCancelPage from "./Pages/shopping-view/paypal-cancel.jsx";
+import PaypalSuccessPage from "./Pages/shopping-view/payment-success.jsx";
+import Viewprofile from "./Pages/shopping-view/Viewprofile.jsx";
+import ResetPassword from "./Pages/auth/ResetPassword.jsx";
+import SearchProducts from "./components/shopping-view/Search.jsx";
+import User from "./Pages/admin-view/User.jsx";
 
 function App() {
   const { isAuthenticated, user, isLoading } = useSelector(
     (state) => state.auth
   );
-
 
   const dispatch = useDispatch();
 
@@ -63,6 +69,15 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route
+            path="/"
+            element={
+              <CheckAuth
+                isAuthenticated={isAuthenticated}
+                user={user}
+              ></CheckAuth>
+            }
+          />
+          <Route
             path="/auth"
             element={
               <CheckAuth isAuthenticated={isAuthenticated} user={user}>
@@ -72,6 +87,7 @@ function App() {
           >
             <Route path="login" element={<Login />} />
             <Route path="register" element={<Signup />} />
+            <Route path="password/reset/:token" element={<ResetPassword />} />
           </Route>
           <Route
             path="/admin"
@@ -89,6 +105,7 @@ function App() {
             <Route path="products" element={<Products />} />
             <Route path="orders" element={<Orders />} />
             <Route path="features" element={<Features />} />
+            <Route path="users" element={<User />} />
           </Route>
           <Route
             path="/shop"
@@ -106,6 +123,11 @@ function App() {
             <Route path="listing" element={<Listing />} />
             <Route path="checkout" element={<Checkout />} />
             <Route path="account" element={<Account />} />
+            <Route path="paypal-return" element={<PaypalReturnPage />} />
+            <Route path="paypal-cancel" element={<PaypalCancelPage />} />
+            <Route path="payment-success" element={<PaypalSuccessPage />} />
+            <Route path="view-profile" element={<Viewprofile />} />
+            <Route path="search" element={<SearchProducts />} />
           </Route>
           <Route path="*" element={<Notfound />} />
           <Route path="/unauth-page" element={<UnauthPage />} />
